@@ -8,9 +8,6 @@ using System.Text;
 using System.Net;
 using System.Web;
 using System.IO;
-
-
-using WinHttp;
 using DotNet4.Utilities.UtilHttp.HttpApiEvent;
 
 namespace JsHelp.API.User
@@ -18,9 +15,12 @@ namespace JsHelp.API.User
 	class LoginHandle
 	{
 		private static HttpClient http = new HttpClient();
-		public static string JSESSIONID(out string lt, out string excution, out string actionUrl, out string responseContent)
+		public static string JSESSIONID(out string lt, out string excution, out string actionUrl)
 		{
 			var jsessuibid=http.GetHtml("http://jiyou.main.11185.cn/u/buyerCenter.html");
+			var responseContent = jsessuibid.document.response.DataString(Encoding.UTF8);
+			var newUrl = HttpUtility.UrlDecode (HttpUtil.GetElement(responseContent, "<a href=\"","\"").Replace("&#37;", "%"));
+			jsessuibid=http.GetHtml(newUrl);
 			responseContent = jsessuibid.document.response.DataString(Encoding.UTF8);
 			var responseHeaders = jsessuibid.document.response.HeadersDic;
 			actionUrl = "https://passport.11185.cn:8001" + HttpUtil.GetElement(responseContent, "action=\"", "\"");
@@ -71,18 +71,24 @@ namespace JsHelp.API.User
 				}
 			}else
 			{
-				//已成功登陆
-				return "http://jiyou.11185.cn/index.html";
+				throw new Exception("异常操作");
 			}
-			//var location = http.Headers.GetValues("Location");
-
-			return null;
+			var responseHeader = document.document.response.Headers;
+			user.JSESSIONID = document.document.response.Cookies;
+			var location = HttpUtil.GetElement(resultInfo, "<a href=\"", "\"").Replace("&#59;","?");
+			return location;
 		}
 
+		internal static string InitUserInfo(string loginLocation, User user)
+		{
+			var userInfo=http.GetHtml(loginLocation, cookies: user.JSESSIONID).document.response.DataString(Encoding.UTF8);
+			var newUrl = HttpUtility.UrlDecode(HttpUtil.GetElement(userInfo, "<a href=\"", "\"").Replace("&#37;", "%"));
+			throw new NotImplementedException();
+		}
 		public static void GetUserInfo(User user)
 		{
-			var doc=http.GetHtml("http://jiyou.11185.cn/index.html", cookies: user.JSESSIONID);
-			Console.WriteLine(doc.ProxyTime);
+			var doc=http.GetHtml("http://jiyou.main.11185.cn/u/buyerCenter.html", cookies: user.JSESSIONID);
+			Console.WriteLine(doc.document.response.DataString(Encoding.UTF8));
 		}
 
 		[Serializable]

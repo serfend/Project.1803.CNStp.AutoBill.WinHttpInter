@@ -10,25 +10,19 @@ namespace JsHelp.API
 	class TestMethod
 	{
 		private User.User user;
+		public TestMethod() { }
+		public TestMethod(User.User user)
+		{
+			this.user = user;
+		}
 		public bool Login()
 		{
-			user = new User.User();
-			user.InputUserByUser();
-			return this.Login(user);
-
-		}
-		public bool Login(User.User user)
-		{
+			if (user == null)
+			{
+				user = new User.User();
+				user.InputUserByUser();
+			}
 			return user.Login();
-			try
-			{
-				return user.Login();
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine(ex.Message);
-				return this.Login(user);
-			}
 		}
 		public bool ModifyPhone()
 		{
