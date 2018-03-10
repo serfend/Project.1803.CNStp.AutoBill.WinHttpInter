@@ -9,6 +9,7 @@ using System.Net;
 using System.Web;
 using System.IO;
 using DotNet4.Utilities.UtilHttp.HttpApiEvent;
+using DotNet4.Utilities.UtilReg;
 
 namespace JsHelp.API.User
 {
@@ -92,7 +93,7 @@ namespace JsHelp.API.User
 		{
 			var http = new HttpClient();
 			var doc=http.GetHtml("http://jiyou.main.11185.cn/u/buyerCenter.html", cookies: user.JSESSIONID);
-			Console.WriteLine(doc.document.response.DataString(Encoding.UTF8));
+			Logger.SysLog(doc.document.response.DataString(Encoding.UTF8));
 		}
 
 		[Serializable]

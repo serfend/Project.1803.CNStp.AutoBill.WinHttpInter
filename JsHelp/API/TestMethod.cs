@@ -11,10 +11,11 @@ namespace JsHelp.API
 	class TestMethod
 	{
 		private User.User user;
+		private StampTarget.Stamp stamp;
 		public TestMethod() {}
 		private bool CheckUserStatus()
 		{
-			if (user == null) { Logger.SysLog("CheckUserStatus().UserNotInitialize");return false }
+			if (user == null) { Logger.SysLog("CheckUserStatus().UserNotInitialize");return false; }
 			if (user.Status != User.User.BillStatus.Login) { Logger.SysLog("CheckUserStatus().UserNotLogin." + user.Username);return false; }
 			return true;
 		}
@@ -41,10 +42,14 @@ namespace JsHelp.API
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine("修改用户手机号失败:" + ex.Message);
+				Logger.SysLog("修改用户手机号失败:" + ex.Message);
 				return false;
 			}
 			return true;
+		}
+		public void SynStampInfo()
+		{
+			throw new NotImplementedException();
 		}
 		public bool SynBillInfo()
 		{
@@ -64,6 +69,8 @@ namespace JsHelp.API
 			throw new NotImplementedException();
 			return true;
 		}
+
+
 
 		public bool TestSubmitBill()
 		{

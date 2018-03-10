@@ -117,7 +117,7 @@ namespace JsHelp.API.User
 		}
 		internal void LoginFailed(string reason)
 		{
-			Console.WriteLine(this.ToString() + "登录失败：" + reason);
+			Logger.SysLog(this.ToString() + "登录失败：" + reason);
 		}
 		public override string ToString()
 		{
@@ -126,7 +126,7 @@ namespace JsHelp.API.User
 
 		internal void LogInfo(string info)
 		{
-			Console.WriteLine(this.Username + ":" + info);
+			Logger.SysLog(this.Username + ":" + info);
 		}
 	}
 	class UserInfomation
@@ -145,8 +145,13 @@ namespace JsHelp.API.User
 			get => phone;
 			set
 			{
-				var taskGetUserInfoForm = new Task<UserInfoForm>(GetUserInfoForm())
-					.ContinueWith((formPayload) => {
+				var GetUserInfoForm = new Task<UserInfoForm>(() =>
+				  {
+					  var http = new HttpClient();
+					  var infoPage = http.GetHtml("http://jiyou.main.11185.cn/u/modify_editInfo.html", cookies: parent.JSESSIONID).document.response.DataString(Encoding.UTF8);
+					  return new UserInfoForm(infoPage, "modifyUser");
+				  });
+				var taskGetUserInfoForm = GetUserInfoForm.ContinueWith((formPayload) => {
 						formPayload.Result["userInfo.mobilePhone"] = value;
 						var http = new HttpClient();
 						var response = http.GetHtml("http://jiyou.main.11185.cn/u/modifyuser.html", "post", formPayload.Result.ToString(), parent.JSESSIONID, referer: "http://jiyou.main.11185.cn/u/modify_editInfo.html").document.response;
@@ -157,25 +162,10 @@ namespace JsHelp.API.User
 							phone = value;
 						}
 					});
-				taskGetUserInfoForm.Start();
+				GetUserInfoForm.Start();
 			}
 		}
 		public LoginForm LoginInfo { get; internal set; }
 		public UserInfoForm UserInfo { get; internal set; }
-		private Func<UserInfoForm> GetUserInfoForm()
-		{
-			return new Func<UserInfoForm>( ()=>
-			{
-				var http = new HttpClient();
-				var infoPage = http.GetHtml("http://jiyou.main.11185.cn/u/modify_editInfo.html", cookies: parent.JSESSIONID).document.response.DataString(Encoding.UTF8);
-				var pageForms = HttpUtil.GetAllElements(infoPage, "<form", "</form>");
-				foreach (var form in pageForms)
-				{
-					if (form.Contains("name=\"modifyUser\"")) { infoPage = form; break; }
-				}
-				var fromInfos = HttpUtil.GetAllElements(infoPage, "<input", ">");
-				return new UserInfoForm(fromInfos);
-			});
-		}
 	}
 }

@@ -27,22 +27,25 @@ namespace JsHelp
 
 		private void Form1_Load(object sender, EventArgs e)
 		{
-			//Console.WriteLine( new PasswordEncoder().GetPasswordRAS("shileizuim"));
-			var rkReg = new Reg().In("Setting").In("rk");
-			ipVerifyUsername.Text = rkReg.GetInfo("username");
-			ipVerifyPassword.Text = rkReg.GetInfo("password");
+			var setting = new Reg().In("Setting");
+			var rkSetting = setting.In("rk");
+			ipVerifyUsername.Text = rkSetting.GetInfo("username");
+			ipVerifyPassword.Text = rkSetting.GetInfo("password");
 			ipVerifyUsername.TextChanged += (x, xx) =>
 			{
-				rkReg.SetInfo("username", ipVerifyUsername.Text);
+				rkSetting.SetInfo("username", ipVerifyUsername.Text);
 				SynVerifier();
 			};
 			ipVerifyPassword.TextChanged += (x, xx) =>
 			{
-				rkReg.SetInfo("password", ipVerifyPassword.Text);
+				rkSetting.SetInfo("password", ipVerifyPassword.Text);
 				SynVerifier();
 			};
+			var formSetting = setting.In("Main");
+			BtnTestStampInfo.Enabled = Convert.ToBoolean(formSetting.GetInfo("BtnTestStampInfo.Enabled","false"));
 			btnTestLogin.Click += (x, xx) => TestModule.Login(); ;
 			btnTestModifyPhone.Click += (x, xx) => TestModule.ModifyPhone();
+			BtnTestStampInfo.Click += (x, xx) => { if (((Button)x).Enabled) TestModule.SynStampInfo(); };
 			btnTestSynBillInfo.Click += (x, xx) => TestModule.SynBillInfo();
 			btnTestGetPhoneVerifyCode.Click += (x, xx) => TestModule.GetPhoneVerifyCode();
 			btnTestGetImgVerifyCode.Click += (x, xx) => TestModule.GetImgVerifyCode();
