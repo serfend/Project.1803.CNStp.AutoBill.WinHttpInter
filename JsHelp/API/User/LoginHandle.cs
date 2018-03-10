@@ -14,9 +14,9 @@ namespace JsHelp.API.User
 {
 	class LoginHandle
 	{
-		private static HttpClient http = new HttpClient();
 		public static string JSESSIONID(out string lt, out string excution, out string actionUrl)
 		{
+			var http = new HttpClient();
 			var jsessuibid=http.GetHtml("http://jiyou.main.11185.cn/u/buyerCenter.html");
 			var newUrl = jsessuibid.document.response.GetHeaders("Location");
 			jsessuibid=http.GetHtml(newUrl);
@@ -39,6 +39,7 @@ namespace JsHelp.API.User
 		}
 		public static string GetLoginLocation(string lt, string execution, string code, string targetUrl, User user)
 		{
+			var http = new HttpClient();
 			var modulus = HttpUtil.GetElement(user.EncryptKey, "modul\":\"", "\"");
 			var exponent = HttpUtil.GetElement(user.EncryptKey, "exponent\":\"", "\"");
 			var encodedPassworder = new Password.PasswordEncoder(exponent, modulus);
@@ -79,6 +80,7 @@ namespace JsHelp.API.User
 
 		internal static string InitUserInfo(string loginLocation, User user)
 		{
+			var http = new HttpClient();
 			var userInfo=http.GetHtml(loginLocation, cookies: user.JSESSIONID).document.response;
 			var newUrl = userInfo.GetHeaders("Location");
 			var tmpItem = new HttpContentItem() { Cookies =   user.JSESSIONID+ userInfo.Cookies };
@@ -88,6 +90,7 @@ namespace JsHelp.API.User
 		}
 		public static void GetUserInfo(User user)
 		{
+			var http = new HttpClient();
 			var doc=http.GetHtml("http://jiyou.main.11185.cn/u/buyerCenter.html", cookies: user.JSESSIONID);
 			Console.WriteLine(doc.document.response.DataString(Encoding.UTF8));
 		}
