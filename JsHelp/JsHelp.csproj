@@ -210,6 +210,7 @@
     <Compile Include="API\User\LoginForm.cs" />
     <Compile Include="API\User\LoginHandle.cs" />
     <Compile Include="API\User\User.cs" />
+    <Compile Include="API\User\UserInfoForm.cs" />
     <Compile Include="FrmMain.cs">
       <SubType>Form</SubType>
     </Compile>

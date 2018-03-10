@@ -18,10 +18,9 @@ namespace JsHelp.API.User
 		public static string JSESSIONID(out string lt, out string excution, out string actionUrl)
 		{
 			var jsessuibid=http.GetHtml("http://jiyou.main.11185.cn/u/buyerCenter.html");
-			var responseContent = jsessuibid.document.response.DataString(Encoding.UTF8);
-			var newUrl = HttpUtility.UrlDecode (HttpUtil.GetElement(responseContent, "<a href=\"","\"").Replace("&#37;", "%"));
+			var newUrl = jsessuibid.document.response.GetHeaders("Location");
 			jsessuibid=http.GetHtml(newUrl);
-			responseContent = jsessuibid.document.response.DataString(Encoding.UTF8);
+			var responseContent = jsessuibid.document.response.DataString(Encoding.UTF8);
 			var responseHeaders = jsessuibid.document.response.HeadersDic;
 			actionUrl = "https://passport.11185.cn:8001" + HttpUtil.GetElement(responseContent, "action=\"", "\"");
 			lt = HttpUtil.GetElement(responseContent, "name=\"lt\" value=\"", "\"");
@@ -45,7 +44,7 @@ namespace JsHelp.API.User
 			var encodedPassworder = new Password.PasswordEncoder(exponent, modulus);
 			//var encodedPassworder = new Password.PasswordEncoder();
 			var encodedPassword = encodedPassworder.GetPasswordRAS(user.Password);
-			http.Item.Request.HeadersDic.Add("Origin", "https://passport.11185.cn:8001");
+			http.Item.Request.HeadersDic["Origin"]= "https://passport.11185.cn:8001";
 			var document = http.GetHtml(targetUrl, host: "passport.11185.cn:8001", referer: "https://passport.11185.cn:8001/cas/tlogin?service=http://jiyou.11185.cn/index.html", cookies: user.JSESSIONID, method: "post", postData: string.Format("username={0}&password={1}&code={2}&lt={3}&execution={4}&_eventId=submit", user.Username, encodedPassword, code, lt, execution));
 
 			
@@ -73,17 +72,19 @@ namespace JsHelp.API.User
 			{
 				throw new Exception("异常操作");
 			}
-			var responseHeader = document.document.response.Headers;
 			user.JSESSIONID = document.document.response.Cookies;
-			var location = HttpUtil.GetElement(resultInfo, "<a href=\"", "\"").Replace("&#59;","?");
+			var location = document.document.response.GetHeaders("Location") ;//HttpUtil.GetElement(resultInfo, "<a href=\"", "\"").Replace("&#59;","?");
 			return location;
 		}
 
 		internal static string InitUserInfo(string loginLocation, User user)
 		{
-			var userInfo=http.GetHtml(loginLocation, cookies: user.JSESSIONID).document.response.DataString(Encoding.UTF8);
-			var newUrl = HttpUtility.UrlDecode(HttpUtil.GetElement(userInfo, "<a href=\"", "\"").Replace("&#37;", "%"));
-			throw new NotImplementedException();
+			var userInfo=http.GetHtml(loginLocation, cookies: user.JSESSIONID).document.response;
+			var newUrl = userInfo.GetHeaders("Location");
+			var tmpItem = new HttpContentItem() { Cookies =   user.JSESSIONID+ userInfo.Cookies };
+			user.JSESSIONID = tmpItem.Cookies;
+			var userInfoDoc = http.GetHtml(loginLocation, cookies: user.JSESSIONID).document.response.DataString(Encoding.UTF8);
+			return HttpUtil.GetElement(userInfoDoc, "<font color=\"red\">", "</font>");
 		}
 		public static void GetUserInfo(User user)
 		{

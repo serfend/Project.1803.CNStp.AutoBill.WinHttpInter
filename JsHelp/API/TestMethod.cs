@@ -34,7 +34,7 @@ namespace JsHelp.API
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine("修改用户手机号失败" + ex.Message);
+				Console.WriteLine("修改用户手机号失败:" + ex.Message);
 				return false;
 			}
 			return true;

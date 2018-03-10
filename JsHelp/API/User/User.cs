@@ -1,4 +1,5 @@
 ﻿using DotNet4.Utilities.UtilCode;
+using DotNet4.Utilities.UtilHttp;
 using DotNet4.Utilities.UtilInput;
 using DotNet4.Utilities.UtilReg;
 using DotNet4.Utilities.UtilVerify;
@@ -26,17 +27,16 @@ namespace JsHelp.API.User
 		private string username;
 		private string password;
 
-		private UserInfomation info = new UserInfomation();
+		private UserInfomation info ;
 
 		private TimeSpan lastUse;
 		private BillStatus status;
-		private CancellationTokenSource loginCancel;
 		/// <summary>
 		/// 手动输入
 		/// </summary>
 		public User()
 		{
-			loginCancel = new CancellationTokenSource();
+			info = new UserInfomation(this);
 		}
 		public User(string username, string password):this()
 		{
@@ -67,7 +67,7 @@ namespace JsHelp.API.User
 				var result = LoginHandle.JSESSIONID(out string lt, out string execution, out string actionUrl);
 				this.Info.LoginInfo = new LoginForm(lt, execution, actionUrl);
 				return result;
-			}, loginCancel.Token);
+			});
 			var CheckJessionId=GetJSessionId.ContinueWith<bool>((x)=> {
 				JSESSIONID = x.Result;
 				return JSESSIONID != null;
@@ -92,14 +92,13 @@ namespace JsHelp.API.User
 				{
 					System.Windows.Forms.MessageBox.Show("登录失败:密码错误");
 				}
-				finally { loginCancel.Cancel(); }
 				return null;
 			});
 			var GetUserInfo = GetLoginInit.ContinueWith((initInfo) =>
 			{
 				//TODO 如何在上一个Task取消后取消后面所有的Task
 				if (initInfo.Result == null) return "获取数据失败";
-				LoginHandle.GetUserInfo(this);
+				System.Windows.Forms.MessageBox.Show("用户ID:"+initInfo.Result,"登录成功");
 				return null;
 			});
 			GetJSessionId.Start();
@@ -124,20 +123,59 @@ namespace JsHelp.API.User
 		{
 			return this.Username + "(" + this.Password + ")";
 		}
+
+		internal void LogInfo(string info)
+		{
+			Console.WriteLine(this.Username + ":" + info);
+		}
 	}
 	class UserInfomation
 	{
 		private string phone;
 		internal string LoginId;//依据验证码识别id
+		private User parent;
+
+		public UserInfomation(User parent)
+		{
+			this.parent = parent;
+		}
+
 		public string Phone
 		{
 			get => phone;
 			set
 			{
-				//TODO 用户登录状态时可通过用户信息页修改
-				phone = value;
+				var taskGetUserInfoForm = GetUserInfoForm(value);
+				var ModifyUserPhone = GetUserInfoForm(value).ContinueWith((formPayload)=> {
+					var payload = formPayload.Result;
+					payload["userInfo.mobilePhone"] = value;
+					var http = new HttpClient();
+					var response=http.GetHtml("http://jiyou.main.11185.cn/u/modifyuser.html", "post", payload.ToString(), parent.JSESSIONID, referer: "http://jiyou.main.11185.cn/u/modify_editInfo.html").document.response;
+					var info = response.DataString();
+					if (info.Contains("您的信息已成功更新")) {
+						parent.LogInfo("手机号码已修改为:" + value);
+						phone = value;
+					}
+					
+				});
+				taskGetUserInfoForm.Start();
 			}
 		}
 		public LoginForm LoginInfo { get; internal set; }
+		public UserInfoForm UserInfo { get; internal set; }
+		private  Task<UserInfoForm> GetUserInfoForm(string phone)
+		{
+			return new Task<UserInfoForm>(()=> {
+				var http = new HttpClient();
+				var infoPage = http.GetHtml("http://jiyou.main.11185.cn/u/modify_editInfo.html", cookies: parent.JSESSIONID).document.response.DataString(Encoding.UTF8);
+				var pageForms = HttpUtil.GetAllElements(infoPage, "<form", "</form>");
+				foreach (var form in pageForms)
+				{
+					if (form.Contains("name=\"modifyUser\"")) { infoPage = form; break; }
+				}
+				var fromInfos = HttpUtil.GetAllElements(infoPage, "<input", ">");
+				return new UserInfoForm(fromInfos);
+			});
+		}
 	}
 }
