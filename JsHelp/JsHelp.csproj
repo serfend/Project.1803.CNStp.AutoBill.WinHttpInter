@@ -183,7 +183,6 @@
     <Compile Include="API\TestMethod.cs" />
     <Compile Include="API\User\LoginHandle.cs" />
     <Compile Include="API\User\User.cs" />
-    <Compile Include="API\User\WinHttp.cs" />
     <Compile Include="FrmMain.cs" />
     <Compile Include="FrmMain.Designer.cs">
       <DependentUpon>FrmMain.cs</DependentUpon>
@@ -196,6 +195,7 @@
     </Compile>
     <Compile Include="Unti\HttpClient\HttpClient.cs" />
     <Compile Include="Unti\HttpClient\HttpClientTest.cs" />
+    <Compile Include="Unti\Image2Binary.cs" />
     <Compile Include="Unti\Input\InputBox.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -241,7 +241,7 @@
       <VersionMinor>1</VersionMinor>
       <Lcid>0</Lcid>
       <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
+      <Isolated>True</Isolated>
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </COMReference>
   </ItemGroup>

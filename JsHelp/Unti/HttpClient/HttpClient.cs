@@ -1,4 +1,6 @@
 ﻿using DotNet4.Utilities.UtilCode;
+using DotNet4.Utilities.UtilHttp.HttpApiEvent;
+using DotNet4.Utilities.UtilHttp.HttpException;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,15 +17,19 @@ namespace DotNet4.Utilities.UtilHttp
 	{
 		public Action<HttpApiEvent.ErrorEventDelegate> OnHttpError;
 		public Action<HttpApiEvent.DocumentReady> OnDocumentReady;
-		public Action<HttpApiEvent.DataAvailable> OnDataAvailable;
-		private List<byte> data;
 		public HttpApi()
 		{
-
-			this.OnError += HttpApi_OnError;
-			this.OnResponseDataAvailable += Http_OnResponseDataAvailable;
-			this.OnResponseFinished += HttpApi_OnResponseFinished;
-			this.OnResponseStart += HttpApi_OnResponseStart;
+			OnError += HttpApi_OnError;
+			OnResponseFinished += HttpApi_OnResponseFinished;
+			
+		}
+		public HttpApi(bool UsedFidder):this()
+		{
+			if(UsedFidder)this.SetProxy(2, "127.0.0.1:8888");
+		}
+		private void HttpApi_OnError(int ErrorNumber, string ErrorDescription)
+		{
+			OnHttpError?.Invoke(new HttpApiEvent.ErrorEventDelegate(ErrorNumber, ErrorDescription));
 		}
 
 		/// <summary>
@@ -45,31 +51,14 @@ namespace DotNet4.Utilities.UtilHttp
 			}
 			return cookies;
 		}
-		public List<byte> Data { get => data; set => data = value; }
-
-		private void HttpApi_OnError(int ErrorNumber, string ErrorDescription)
-		{
-			OnHttpError?.Invoke(new HttpApiEvent.ErrorEventDelegate(ErrorNumber, ErrorDescription));
-		}
 
 		private void HttpApi_OnResponseFinished()
 		{
-			OnDocumentReady?.Invoke(new HttpApiEvent.DocumentReady(Data));
+			OnDocumentReady?.Invoke(new HttpApiEvent.DocumentReady(this.ResponseBody));
 		}
 
-		private void HttpApi_OnResponseStart(int Status, string ContentType)
-		{
-			Data = new List<byte>(1024);
-		}
 
-		private void Http_OnResponseDataAvailable(ref Array Data)
-		{
-			foreach(var byteInfo in Data)
-			{
-				this.Data.Add((byte)byteInfo);
-			}
-			OnDataAvailable?.Invoke(new HttpApiEvent.DataAvailable(ref Data));
-		}
+
 	}
 	namespace HttpApiEvent
 	{
@@ -80,35 +69,19 @@ namespace DotNet4.Utilities.UtilHttp
 			public HttpDocument(ref DocumentReady document,ref HttpApi http, HttpContentItem item) :base(document.Data)
 			{
 				SetResponse(item, http.GetAllResponseHeaders());
-				item.Data = http.Data;
+				item.Data = this.Data;
 			}
 
 			public HttpDocument(object responseBody, string headers, HttpContentItem item) : base(responseBody)
 			{
 				SetResponse(item, headers);
-				var data =new List<byte>();
-				foreach(var byt in this.Data)
-				{
-					data.Add(byt);
-				}
-				item.Data = data;
+				item.Data = this.Data;
 			}
 			private void SetResponse(HttpContentItem item,string headers)
 			{
 				response = item;
 				response.Cookies = HttpApi.GetAllCookies(headers);
 			}
-		}
-		public class DataAvailable
-		{
-			private Array data;
-
-			public DataAvailable(ref Array data)
-			{
-				this.data = data;
-			}
-
-			public Array Data { get => data; set => data = value; }
 		}
 		public class ErrorEventDelegate
 		{
@@ -134,14 +107,7 @@ namespace DotNet4.Utilities.UtilHttp
 
 			public DocumentReady(object responseBody)
 			{
-				this.Data = ObjectToBytes(responseBody);
-			}
-			public static byte[] ObjectToBytes(object obj)
-			{
-				using (MemoryStream ms = new MemoryStream())
-				{
-					IFormatter formatter = new BinaryFormatter(); formatter.Serialize(ms, obj); return ms.GetBuffer();
-				}
+				this.Data = (byte[])responseBody;
 			}
 		}
 	}
@@ -150,31 +116,14 @@ namespace DotNet4.Utilities.UtilHttp
 	{
 		public Action<HttpClientChild, HttpApiEvent.DocumentReady> DocumentReady;
 		public Action<HttpClientChild, HttpApiEvent.ErrorEventDelegate> BadResponse;
-		public Action<HttpClientChild, HttpApiEvent.DataAvailable> DataAvailable;
 		private List<HttpClientChild> child = new List<HttpClientChild>();
 		private HttpItem item;
 
 		internal HttpItem Item { get => item; set => item = value; }
 
-		public HttpClientChild GetHtml(string url=null,string method=null,string postData=null,string cookies=null,string userAgent=null,string host=null,string referer =null ,bool ifModifies=true,int timeOut=30000,string clientId =null,Action<HttpApiEvent.HttpDocument>callBack=null, HttpApiEvent.HttpDocument responseDocument=null)
+		public HttpClientChild GetHtml(string url=null,string method=null,string postData=null,string cookies=null,string userAgent=null,string host=null,string referer =null ,bool ifModifies=true,int timeOut=30000,string clientId =null,Action<HttpApiEvent.HttpDocument>callBack=null)
 		{
-			var child = new HttpClientChild(this) {
-				ID = clientId
-			};
-			this.child.Add(child);
-			child.DocumentReady += (x,xx) =>
-			{
-				DocumentReady?.Invoke(x,xx);
-				callBack?.Invoke(xx);
-			};
-			child.DataAvailable += (x, xx) =>
-			{
-				DataAvailable?.Invoke(x, xx);
-			};
-			child.BadResponse += (x, xx) =>
-			{
-				BadResponse?.Invoke(x, xx);
-			};
+
 			item = new HttpItem()
 			{
 				Host=host,
@@ -186,13 +135,27 @@ namespace DotNet4.Utilities.UtilHttp
 			};
 			item.Request.PostData = postData;
 			item.Request.Cookies = cookies;
+			var child = new HttpClientChild(this, Item.UsedFidder)
+			{
+				ID = clientId
+			};
+			this.child.Add(child);
+			child.DocumentReady += (x, xx) =>
+			{
+				DocumentReady?.Invoke(x, xx);
+				callBack?.Invoke(xx);
+			};
+			child.BadResponse += (x, xx) =>
+			{
+				BadResponse?.Invoke(x, xx);
+			};
 			do
 			{
 				bool sendSuccess = false;
 				if (callBack != null)
 					sendSuccess=child.GetResponse(item, callBack);
 				else
-					sendSuccess=child.GetResponse(out responseDocument, item);
+					sendSuccess=child.GetResponse(item);
 				if (sendSuccess) return child;
 			} while (true);
 		}
@@ -202,9 +165,9 @@ namespace DotNet4.Utilities.UtilHttp
 	{
 		public Action<HttpClientChild,HttpApiEvent.HttpDocument> DocumentReady;
 		public Action<HttpClientChild,HttpApiEvent.ErrorEventDelegate> BadResponse;
-		public Action<HttpClientChild,HttpApiEvent.DataAvailable> DataAvailable;
 		private HttpClient parent;
 		private HttpApi http;
+		public HttpDocument document = null;
 
 		private HttpItem item;
 		private long proxyBeginTime, proxyEndTime;
@@ -222,17 +185,13 @@ namespace DotNet4.Utilities.UtilHttp
 		public HttpItem Item { get => item; set => item = value; }
 		public string ID { get; internal set; }
 
-		public HttpClientChild(HttpClient parent)
+		public HttpClientChild(HttpClient parent,bool UsedFidder=false)
 		{
 			this.parent = parent;
-			http = new HttpApi();
+			http = new HttpApi(UsedFidder);
 			http.OnHttpError += (x) =>
 			{
 				BadResponse?.Invoke(this, x);
-			};
-			http.OnDataAvailable += (x) =>
-			{
-				DataAvailable?.Invoke(this, x);
 			};
 			http.OnDocumentReady += (x) =>
 			{
@@ -250,9 +209,9 @@ namespace DotNet4.Utilities.UtilHttp
 		/// <param name="document"></param>
 		/// <param name="item"></param>
 		/// <returns></returns>
-		public bool GetResponse(out HttpApiEvent.HttpDocument document, HttpItem item = null)
+		public bool GetResponse( HttpItem item = null)
 		{
-			return GetResponse(out document, item,true);
+			return GetResponse(item,false);
 		}
 		/// <summary>
 		/// 异步方法
@@ -262,31 +221,38 @@ namespace DotNet4.Utilities.UtilHttp
 		/// <returns></returns>
 		public bool GetResponse(HttpItem item = null, Action<HttpApiEvent.HttpDocument> CallBack = null)
 		{
-			return GetResponse(out HttpApiEvent.HttpDocument document, item,false, CallBack);
+			return GetResponse(item,false, CallBack);
 		}
-		public bool GetResponse(out HttpApiEvent.HttpDocument document,HttpItem item=null,bool syn=false,Action<HttpApiEvent.HttpDocument> CallBack=null)
+		public bool GetResponse(HttpItem item=null,bool syn=false,Action<HttpApiEvent.HttpDocument> CallBack=null)
 		{
 			if (item != null)
 			{
 				Item = item;
 			}
 			proxyBeginTime = HttpUtil.TimeStamp;
-			if (CallBack!=null)//当有回调时则触发自身的DocumentReady
-				http.OnDocumentReady += (x) =>
-				{
-					CallBack.Invoke(SetDocument(x));
-				};
-			else
-				http.OnDocumentReady += (x) =>
-				{
-					DocumentReady?.Invoke(this, SetDocument(x));
-				};
+
+
+			http.OnDocumentReady += (x) =>
+			{
+				var document = SetDocument(x);
+				DocumentReady?.Invoke(this, document);
+			};
+			http.OnError += (x, xx) =>
+			{
+
+			};
 			try
 			{
-				http.Open(Item.Method, Item.Url, Item.Asyn);
-				//http.Option[WinHttpRequestOption.WinHttpRequestOptionEnableRedirects] =true;
+				if (Item.Url == null || Item.Url.Length < 5)
+				{
+					throw new UrlInvalidException();
+				}
+				http.Option[WinHttpRequestOption.WinHttpRequestOption_EnableHttpsToHttpRedirects] = false;
+				http.Option[WinHttpRequestOption.WinHttpRequestOption_SslErrorIgnoreFlags] = 13056;
+				http.Open(Item.Method, Item.Url, syn);
+				http.SetRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 				var cookies = Item.Request.Cookies;
-				if(cookies!=null&&cookies.Length>0)http.SetRequestHeader("cookies", cookies);
+				if(cookies!=null&&cookies.Length>0)http.SetRequestHeader("Cookie", cookies);
 				if(Item.Referer!=null)if(Item.Referer!=null)http.SetRequestHeader("Referer", Item.Referer);
 				if (Item.IfModified) http.SetRequestHeader("IfModified","0");
 				http.SetRequestHeader("UserAgent", Item.UserAgent);
@@ -298,18 +264,20 @@ namespace DotNet4.Utilities.UtilHttp
 					{
 						http.SetRequestHeader(header.Key, header.Value);
 					}
-					http.Send(Item.Request.PostData);
 				}
+				if(Item.Request.PostData!="")
+					http.Send(Item.Request.PostData);
 				else
 				{
 					http.Send();
 				}
 
-				if (!syn) document = null; else
+				if (syn) document = null; else
 				{
 					var doc = http.ResponseBody;
 					var headers = http.GetAllResponseHeaders();
 					document = new HttpApiEvent.HttpDocument(doc, headers,Item.Response);
+					
 					return true;
 				}
 			}
@@ -317,7 +285,7 @@ namespace DotNet4.Utilities.UtilHttp
 			{
 				Console.WriteLine(ex.Message + '\n' + ex.StackTrace);
 				document = null;
-				return false;
+				return true;
 			}
 			return true;
 
@@ -328,6 +296,20 @@ namespace DotNet4.Utilities.UtilHttp
 		}
 
 
+	}
+	namespace HttpException
+	{
+
+		[Serializable]
+		public class UrlInvalidException : Exception
+		{
+			public UrlInvalidException() { }
+			public UrlInvalidException(string message) : base(message) { }
+			public UrlInvalidException(string message, Exception inner) : base(message, inner) { }
+			protected UrlInvalidException(
+			  SerializationInfo info,
+			  StreamingContext context) : base(info, context) { }
+		}
 	}
 	class HttpItem
 	{
@@ -364,7 +346,7 @@ namespace DotNet4.Utilities.UtilHttp
 					var rand = new Random();
 					int random = rand.Next(UserAgentBase.Count);
 					int randomValue = rand.Next(999);
-					return string.Format(UserAgentBase[random], UserAgentBase, randomValue);
+					return string.Format(UserAgentBase[random], randomValue);
 				}
 				else
 				{
@@ -382,13 +364,14 @@ namespace DotNet4.Utilities.UtilHttp
 		public bool Asyn { get => asyn; set => asyn = value; }
 		internal HttpContentItem Request { get => request; set => request = value; }
 		internal HttpContentItem Response { get => response; set => response = value; }
+		public bool UsedFidder { get;  set; }
 	}
 	public class HttpContentItem
 	{
 		private Dictionary<string,string> cookies;
 		private Dictionary<string, string> headers;
 		private Dictionary<string, string> postData;
-		private List<byte> data;
+		private byte[] data;
 		public HttpContentItem()
 		{
 			cookies = new Dictionary<string, string>();
@@ -398,12 +381,12 @@ namespace DotNet4.Utilities.UtilHttp
 
 		public string DataString(Encoding coding)
 		{
-			return coding.GetString(data.ToArray());
+			return coding.GetString(Data.ToArray());
 		}
 		public string Cookies
 		{
 			get => GetDic('=', ';', ref cookies);
-			set => SetDic('=', ';', ref cookies, value);
+			set => SetDic('=', ';', ref cookies, value?.Replace(':','='));
 		}
 		public string PostData
 		{
@@ -422,14 +405,15 @@ namespace DotNet4.Utilities.UtilHttp
 		}
 		public string GetHeaders(string key)
 		{
-			return headers[key];
+			return headers.ContainsKey(key) ?
+			headers[key] : null;
 		}
 		public void SetHeaders(string key,string value)
 		{
 			headers[key] = value;
 		}
-		public List<byte> Data { get => data; set => data = value; }
 		public Dictionary<string, string> HeadersDic { get => headers; set => headers = value; }
+		public byte[] Data { get => data; set => data = value; }
 
 		public HttpContentItem AddPostData(string key,string value)
 		{
@@ -455,10 +439,11 @@ namespace DotNet4.Utilities.UtilHttp
 		{
 			if (value == null) return;
 			value=value.Replace(' ', end);
-			string[] items = value.Split(split);
+			string[] items = value.Split(end);
 			foreach (var item in items)
 			{
-				string[] info = item.Split(end);
+				if (item.Length < 2) continue;
+				string[] info = item.Split(split);
 				dic[info[0]] = info[1];
 			}
 		}

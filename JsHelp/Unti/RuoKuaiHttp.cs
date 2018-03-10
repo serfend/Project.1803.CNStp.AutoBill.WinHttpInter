@@ -27,6 +27,7 @@ namespace DotNet4.Utilities.UtilVerify
 		{
 			if (!init) throw new Exception("未初始化");
 			Console.WriteLine("验证码识别请求开始");
+			Image2Binary.CreateImageFromBytes("verify", picData);
 			var begin = HttpUtil.TimeStamp;
 			string result= Post(@"http://api.ruokuai.com/create.xml", config.ToDictionary(), picData);
 			picId = HttpUtil.GetElementInItem(result, "Id");

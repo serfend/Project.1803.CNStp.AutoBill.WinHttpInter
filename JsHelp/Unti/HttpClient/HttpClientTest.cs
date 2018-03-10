@@ -11,11 +11,15 @@ namespace JsHelp.Unti
 		private HttpClient http;
 		public void NormalHttp()
 		{
-			http = new HttpClient();
-			http.GetHtml("http://www.baidu.com",callBack:(x)=>
-			{
-				Console.WriteLine(x.response.DataString(Encoding.UTF8));
+			var task = new Task(()=> {
+				http = new HttpClient();
+				http.GetHtml("http://www.baidu.com", callBack: (x) =>
+				{
+					Console.WriteLine(x.response.DataString(Encoding.UTF8).Length);
+				});
 			});
+			task.Start();
 		}
+		
 	}
 }

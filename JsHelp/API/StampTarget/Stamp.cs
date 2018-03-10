@@ -5,11 +5,12 @@ using System.Text;
 
 namespace JsHelp.API.StampTarget
 {
-	class Stamp
-	{
-		private string id;
-		private double price;
-		private int maxBuyNum;
-		private string tmp233;
-	}
+	//TODO 邮票实体
+	//class Stamp
+	//{
+	//	private string id;
+	//	private double price;
+	//	private int maxBuyNum;
+	//	private string tmp233;
+	//}
 }
