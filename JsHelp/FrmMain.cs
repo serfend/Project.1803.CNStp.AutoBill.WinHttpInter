@@ -20,7 +20,7 @@ namespace JsHelp
 			InitializeComponent();
 			//重要！根据线程实际使用情况调整。
 			//修改HTTP请求默认连接数，默认是2。
-			System.Net.ServicePointManager.DefaultConnectionLimit = 128;
+			System.Net.ServicePointManager.DefaultConnectionLimit = 256;
 			//遇到417错误请使用以下代码。
 			//System.Net.ServicePointManager.Expect100Continue = false;
 		}
@@ -43,6 +43,10 @@ namespace JsHelp
 			};
 			btnTestLogin.Click += (x, xx) => TestModule.Login(); ;
 			btnTestModifyPhone.Click += (x, xx) => TestModule.ModifyPhone();
+			btnTestSynBillInfo.Click += (x, xx) => TestModule.SynBillInfo();
+			btnTestGetPhoneVerifyCode.Click += (x, xx) => TestModule.GetPhoneVerifyCode();
+			btnTestGetImgVerifyCode.Click += (x, xx) => TestModule.GetImgVerifyCode();
+			btnTestSubmitBill.Click += (x, xx) => TestModule.TestSubmitBill();
 			SynVerifier();
 		}
 
@@ -54,15 +58,5 @@ namespace JsHelp
 		#region 测试模块
 		private TestMethod TestModule = new TestMethod();
 		#endregion
-
-		private void Form1_FormClosing(object sender, FormClosingEventArgs e)
-		{
-
-		}
-
-		private void btnTestLogin_Click(object sender, EventArgs e)
-		{
-
-		}
 	}
 }

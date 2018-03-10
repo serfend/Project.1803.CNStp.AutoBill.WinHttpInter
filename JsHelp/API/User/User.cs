@@ -145,27 +145,27 @@ namespace JsHelp.API.User
 			get => phone;
 			set
 			{
-				var taskGetUserInfoForm = GetUserInfoForm(value);
-				var ModifyUserPhone = GetUserInfoForm(value).ContinueWith((formPayload)=> {
-					var payload = formPayload.Result;
-					payload["userInfo.mobilePhone"] = value;
-					var http = new HttpClient();
-					var response=http.GetHtml("http://jiyou.main.11185.cn/u/modifyuser.html", "post", payload.ToString(), parent.JSESSIONID, referer: "http://jiyou.main.11185.cn/u/modify_editInfo.html").document.response;
-					var info = response.DataString();
-					if (info.Contains("您的信息已成功更新")) {
-						parent.LogInfo("手机号码已修改为:" + value);
-						phone = value;
-					}
-					
-				});
+				var taskGetUserInfoForm = new Task<UserInfoForm>(GetUserInfoForm())
+					.ContinueWith((formPayload) => {
+						formPayload.Result["userInfo.mobilePhone"] = value;
+						var http = new HttpClient();
+						var response = http.GetHtml("http://jiyou.main.11185.cn/u/modifyuser.html", "post", formPayload.Result.ToString(), parent.JSESSIONID, referer: "http://jiyou.main.11185.cn/u/modify_editInfo.html").document.response;
+						var info = response.DataString();
+						if (info.Contains("您的信息已成功更新"))
+						{
+							parent.LogInfo("手机号码已修改为:" + value);
+							phone = value;
+						}
+					});
 				taskGetUserInfoForm.Start();
 			}
 		}
 		public LoginForm LoginInfo { get; internal set; }
 		public UserInfoForm UserInfo { get; internal set; }
-		private  Task<UserInfoForm> GetUserInfoForm(string phone)
+		private Func<UserInfoForm> GetUserInfoForm()
 		{
-			return new Task<UserInfoForm>(()=> {
+			return new Func<UserInfoForm>( ()=>
+			{
 				var http = new HttpClient();
 				var infoPage = http.GetHtml("http://jiyou.main.11185.cn/u/modify_editInfo.html", cookies: parent.JSESSIONID).document.response.DataString(Encoding.UTF8);
 				var pageForms = HttpUtil.GetAllElements(infoPage, "<form", "</form>");

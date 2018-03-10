@@ -195,7 +195,6 @@
 			this.btnTestLogin.TabIndex = 0;
 			this.btnTestLogin.Text = "登录";
 			this.btnTestLogin.UseVisualStyleBackColor = true;
-			this.btnTestLogin.Click += new System.EventHandler(this.btnTestLogin_Click);
 			// 
 			// groupBox4
 			// 
@@ -253,7 +252,6 @@
 			this.Controls.Add(this.groupBox1);
 			this.Name = "FrmMain";
 			this.Text = "11185邮票采集";
-			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
 			this.Load += new System.EventHandler(this.Form1_Load);
 			this.groupBox1.ResumeLayout(false);
 			this.groupBox1.PerformLayout();

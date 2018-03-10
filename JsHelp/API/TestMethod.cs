@@ -4,13 +4,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace JsHelp.API
 {
 	class TestMethod
 	{
 		private User.User user;
-		public TestMethod() { }
+		public TestMethod() {}
+		private bool CheckUserStatus()
+		{
+			if (user == null) { Logger.SysLog("CheckUserStatus().UserNotInitialize");return false }
+			if (user.Status != User.User.BillStatus.Login) { Logger.SysLog("CheckUserStatus().UserNotLogin." + user.Username);return false; }
+			return true;
+		}
 		public TestMethod(User.User user)
 		{
 			this.user = user;
@@ -26,7 +33,7 @@ namespace JsHelp.API
 		}
 		public bool ModifyPhone()
 		{
-			if (user.Status != User.User.BillStatus.Login) throw new UserNotLoginException();
+			if (!CheckUserStatus())return false;
 			var userReg = new Reg().In("Setting").In("defaultUser");
 			try
 			{
@@ -39,16 +46,31 @@ namespace JsHelp.API
 			}
 			return true;
 		}
-
-		[Serializable]
-		public class UserNotLoginException : Exception
+		public bool SynBillInfo()
 		{
-			public UserNotLoginException() { }
-			public UserNotLoginException(string message) : base(message) { }
-			public UserNotLoginException(string message, Exception inner) : base(message, inner) { }
-			protected UserNotLoginException(
-			  System.Runtime.Serialization.SerializationInfo info,
-			  System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+			if (!CheckUserStatus()) return false;
+
+			return true;
 		}
+		public bool GetPhoneVerifyCode()
+		{
+			if (!CheckUserStatus()) return false;
+			throw new NotImplementedException();
+		}
+
+		public bool GetImgVerifyCode()
+		{
+			if (!CheckUserStatus()) return false;
+			throw new NotImplementedException();
+			return true;
+		}
+
+		public bool TestSubmitBill()
+		{
+			if (!CheckUserStatus()) return false;
+			throw new NotImplementedException();
+			return true;
+		}
+
 	}
 }
