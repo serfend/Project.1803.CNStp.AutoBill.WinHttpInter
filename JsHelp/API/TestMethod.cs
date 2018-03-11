@@ -19,12 +19,18 @@ namespace JsHelp.API
 			if (user.Status != User.User.BillStatus.Login) { Logger.SysLog("CheckUserStatus().UserNotLogin." + user.Username);return false; }
 			return true;
 		}
+		private bool CheckStampStatus()
+		{
+			if (stamp == null) { Logger.SysLog("CheckStampStatus().StampNotInitialize");return false; }
+			return true;
+		}
 		public TestMethod(User.User user)
 		{
 			this.user = user;
 		}
 		public bool Login()
 		{
+			DotNet4.Utilities.UtilHttp.HttpItem.UsedFidder = true;
 			if (user == null)
 			{
 				user = new User.User();
@@ -47,14 +53,39 @@ namespace JsHelp.API
 			}
 			return true;
 		}
-		public void SynStampInfo()
+		public bool SynStampInfo(bool showMsg=true)
 		{
-			throw new NotImplementedException();
+			if (!CheckUserStatus()) return false;
+			var stampReg = new Reg().In("Setting").In("defaultUser");
+			try
+			{
+				stamp = new StampTarget.Stamp(user,
+					InputBox.ShowInputBox("邮票", "邮票的id", stampReg.GetInfo("stampId"), (x) => stampReg.SetInfo("stampId", x)),
+					InputBox.ShowInputBox("邮票", "购买数量", stampReg.GetInfo("stampBuyNum"), (x) => stampReg.SetInfo("stampBuyNum", x)),
+					(loadedStamp) => {
+						if (showMsg)
+						{
+							loadedStamp.ShowOut();
+						}
+					});
+			}
+			catch (Exception ex)
+			{
+				Logger.SysLog("获取邮票数据失败:" + ex.Message);
+			}
+			return true;
 		}
 		public bool SynBillInfo()
 		{
 			if (!CheckUserStatus()) return false;
-
+			var task = new Task(() => SynStampInfo(false));
+			var synBiill = task.ContinueWith((x) => {
+				do
+				{
+					Task.Delay(500);//等待邮票数据初始化
+				} while (!stamp.SynBillInfo(user));
+			});
+			task.Start();
 			return true;
 		}
 		public bool GetPhoneVerifyCode()

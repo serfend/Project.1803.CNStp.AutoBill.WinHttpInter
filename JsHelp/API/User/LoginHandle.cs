@@ -19,7 +19,7 @@ namespace JsHelp.API.User
 		{
 			var http = new HttpClient();
 			var jsessuibid=http.GetHtml("http://jiyou.main.11185.cn/u/buyerCenter.html");
-			var newUrl = jsessuibid.document.response.GetHeaders("Location");
+			var newUrl = jsessuibid.document.response.GetHeader("Location");
 			jsessuibid=http.GetHtml(newUrl);
 			var responseContent = jsessuibid.document.response.DataString(Encoding.UTF8);
 			var responseHeaders = jsessuibid.document.response.HeadersDic;
@@ -74,18 +74,19 @@ namespace JsHelp.API.User
 			{
 				throw new Exception("异常操作");
 			}
-			user.JSESSIONID = document.document.response.Cookies;
-			var location = document.document.response.GetHeaders("Location") ;//HttpUtil.GetElement(resultInfo, "<a href=\"", "\"").Replace("&#59;","?");
+			user.JSESSIONID += document.document.response.Cookies;
+			var location = document.document.response.GetHeader("Location") ;//HttpUtil.GetElement(resultInfo, "<a href=\"", "\"").Replace("&#59;","?");
 			return location;
 		}
 
 		internal static string InitUserInfo(string loginLocation, User user)
 		{
+			user.JSESSIONID = user.JSESSIONID + "JSESSIONID=" + HttpUtil.GetElement(loginLocation, "jsessionid=","?");
 			var http = new HttpClient();
 			var userInfo=http.GetHtml(loginLocation, cookies: user.JSESSIONID).document.response;
-			var newUrl = userInfo.GetHeaders("Location");
-			var tmpItem = new HttpContentItem() { Cookies =   user.JSESSIONID+ userInfo.Cookies };
-			user.JSESSIONID = tmpItem.Cookies;
+			var newUrl = userInfo.GetHeader("Location");
+			//var tmpItem = new HttpContentItem() { Cookies =   user.JSESSIONID };
+			//user.JSESSIONID = tmpItem.Cookies;
 			var userInfoDoc = http.GetHtml(loginLocation, cookies: user.JSESSIONID).document.response.DataString(Encoding.UTF8);
 			return HttpUtil.GetElement(userInfoDoc, "<font color=\"red\">", "</font>");
 		}

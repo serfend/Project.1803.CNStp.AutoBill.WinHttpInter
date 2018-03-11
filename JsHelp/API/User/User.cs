@@ -13,7 +13,7 @@ using static JsHelp.API.User.LoginHandle;
 
 namespace JsHelp.API.User
 {
-	class User
+	public class User
 	{
 		private RuoKuaiHttp verifier = new RuoKuaiHttp();
 		public enum BillStatus
@@ -26,6 +26,7 @@ namespace JsHelp.API.User
 
 		private string username;
 		private string password;
+		private string userId;
 
 		private UserInfomation info ;
 
@@ -53,7 +54,90 @@ namespace JsHelp.API.User
 		public RuoKuaiHttp Verifier { get => verifier; set => verifier = value; }
 		public string EncryptKey { get => encryptKey; set => encryptKey = value; }
 		internal UserInfomation Info { get => info; set => info = value; }
+		public string UserId { get => userId; set => userId = value; }
 
+		/// <summary>
+		/// 登录状态下获取用户名
+		/// </summary>
+		/// <returns></returns>
+		public void JSONPmemtitleaciton(Action<string>CallBack)
+		{
+			var http = new HttpClient();
+			http.Item.Request.Cookies = this.JSESSIONID;
+			http.GetHtml("http://jiyou.main.11185.cn/JSONPmemtitleaciton.html?jsoncallback=success_jsonpCallback&_1520750510311=", callBack: (x) => {
+				CallBack?.Invoke(x.response.DataString());
+			});
+		}
+		/// <summary>
+		/// emp:{"msg":"18260633","ok":true}
+		/// </summary>
+		/// <param name="CallBack"></param>
+		public void JSONGetUserDefaultAddressByUserID(Action<string> CallBack=null)
+		{
+			BillPageInfoGet("http://jiyou.retail.11185.cn/retail/JSONGetUserDefaultAddressByUserID.html", string.Format("buyer_user_id={0}", this.userId), (x) =>
+			{
+				CallBack?.Invoke(x);
+			});
+		}
+		/// <summary>
+		/// 获取用户已存地址 emp:[{"address":"北京北京市东城区二锅头街233号","city":"110100","contextName":"233","country":"I","defAddress":0,"district":"110101","id":18260633,"mobile":"13627271134","province":"110000","type":0,"userId":26663606,"zipcode":"110101"}]
+		/// </summary>
+		/// <param name="CallBack"></param>
+		public void JSONGetUserAddressWithUserID(Action<string>CallBack=null)
+		{
+			BillPageInfoGet("http://jiyou.retail.11185.cn/retail/JSONGetUserAddressWithUserID.html", string.Format("buyer_user_id={0}", this.userId), (x) =>
+			{
+				this.info.Adress = x;
+				CallBack?.Invoke(x);
+			});
+		}
+		private void BillPageInfoGet(string url,string postData,Action<string>CallBack=null)
+		{
+			var item = new HttpItem()
+			{
+				Url = url,
+				Referer = "http://jiyou.retail.11185.cn/retail/initPageForBuyNow.html",
+				Method = "post",
+				Request = new HttpContentItem()
+				{
+					PostData =postData
+				},
+			};
+			item.Request.HeadersDic["Orgin"] = "http://jiyou.retail.11185.cn";
+			item.Request.HeadersDic["X-Requested-With"] = "XMLHttpRequest";
+			ByCASAuth(item, (x) => {
+				CallBack?.Invoke(x);
+			});
+		}
+		/// <summary>
+		/// 在要求登录时使用此方法返回
+		/// </summary>
+		/// <param name="target"></param>
+		/// <param name="CallBack"></param>
+		public void ByCASAuth(HttpItem target, Action<string> CallBack) {
+			var http = new HttpClient() {Item=target };
+			
+			http.GetHtml(cookies: this.JSESSIONID, callBack: (rawInfo) => {
+				if (rawInfo.response.GetHeader("Location") != null)
+				{
+					http.GetHtml(string.Format("https://passport.11185.cn:8001/cas/tlogin?service={0}", target.Url), cookies: this.JSESSIONID, callBack: (x) => {
+						var tickUrl = x.response.GetHeader("Location");
+						http.GetHtml(tickUrl, cookies: this.JSESSIONID, callBack: (y) => {
+							var resultUrl = x.response.GetHeader("Location");
+							this.JSESSIONID += x.response.Cookies;
+							http.GetHtml(resultUrl, cookies: this.JSESSIONID, callBack: (z) =>
+							{
+								CallBack?.Invoke(y.response.DataString());
+							});
+						});
+					});
+				}
+				else
+				{
+					CallBack?.Invoke(rawInfo.response.DataString());
+				}
+			});
+		}
 		public void InputUserByUser()
 		{
 			var regUser = new Reg().In("Setting").In("defaultUser");
@@ -84,8 +168,9 @@ namespace JsHelp.API.User
 					this.Status = BillStatus.Login;
 					return LoginHandle.InitUserInfo(loginLocation, this);
 				}
-				catch (VerifyFailedException)
+				catch (VerifyFailedException ex)
 				{
+					this.LogInfo("登录失败"+ex.Message);
 					new TestMethod(this).Login();
 				}
 				catch (UserPasswordFailedException)
@@ -98,7 +183,17 @@ namespace JsHelp.API.User
 			{
 				//TODO 如何在上一个Task取消后取消后面所有的Task
 				if (initInfo.Result == null) return "获取数据失败";
-				System.Windows.Forms.MessageBox.Show("用户ID:"+initInfo.Result,"登录成功");
+				this.JSONPmemtitleaciton((x) =>
+				{
+					this.UserId =Convert.ToInt32( initInfo.Result).ToString();
+					JSONGetUserDefaultAddressByUserID((checkValidResult) => {
+
+						JSONGetUserAddressWithUserID((address) => this.LogInfo("JSONGetUserAddressWithUserID:" + address));
+					});
+					
+					System.Windows.Forms.MessageBox.Show("用户ID:" + initInfo.Result +",json:"+x, "登录成功");
+				});
+				
 				return null;
 			});
 			GetJSessionId.Start();
@@ -132,6 +227,7 @@ namespace JsHelp.API.User
 	class UserInfomation
 	{
 		private string phone;
+		private string adress;
 		internal string LoginId;//依据验证码识别id
 		private User parent;
 
@@ -167,5 +263,6 @@ namespace JsHelp.API.User
 		}
 		public LoginForm LoginInfo { get; internal set; }
 		public UserInfoForm UserInfo { get; internal set; }
+		public string Adress { get => adress; set => adress = value; }
 	}
 }
