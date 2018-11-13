@@ -19,7 +19,7 @@ namespace JsHelp
 
 		private void FrmTest_Load(object sender, EventArgs e)
 		{
-			new JsHelp.Unti.HttpClientTest().NormalHttp();
+			new DotNet4.Utilities.UtilHttp.HttpClientTest().NormalHttp();
 		}
 	}
 }

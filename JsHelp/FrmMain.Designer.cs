@@ -36,7 +36,11 @@
 			this.btnAddUser = new System.Windows.Forms.Button();
 			this.groupBox2 = new System.Windows.Forms.GroupBox();
 			this.lstUser = new System.Windows.Forms.ListView();
+			this.UserName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+			this.Password = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
 			this.groupBox3 = new System.Windows.Forms.GroupBox();
+			this.btnTestLoginMuti = new System.Windows.Forms.Button();
+			this.BtnTestStampInfo = new System.Windows.Forms.Button();
 			this.btnTestSubmitBill = new System.Windows.Forms.Button();
 			this.btnTestSynBillInfo = new System.Windows.Forms.Button();
 			this.btnTestGetImgVerifyCode = new System.Windows.Forms.Button();
@@ -48,7 +52,7 @@
 			this.ipVerifyPassword = new System.Windows.Forms.TextBox();
 			this.label4 = new System.Windows.Forms.Label();
 			this.ipVerifyUsername = new System.Windows.Forms.TextBox();
-			this.BtnTestStampInfo = new System.Windows.Forms.Button();
+			this.OpLog = new System.Windows.Forms.RichTextBox();
 			this.groupBox1.SuspendLayout();
 			this.groupBox2.SuspendLayout();
 			this.groupBox3.SuspendLayout();
@@ -115,21 +119,36 @@
 			this.groupBox2.Controls.Add(this.lstUser);
 			this.groupBox2.Location = new System.Drawing.Point(312, 12);
 			this.groupBox2.Name = "groupBox2";
-			this.groupBox2.Size = new System.Drawing.Size(673, 892);
+			this.groupBox2.Size = new System.Drawing.Size(501, 568);
 			this.groupBox2.TabIndex = 1;
 			this.groupBox2.TabStop = false;
 			this.groupBox2.Text = "用户列表";
 			// 
 			// lstUser
 			// 
-			this.lstUser.Location = new System.Drawing.Point(6, 20);
+			this.lstUser.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.UserName,
+            this.Password});
+			this.lstUser.Location = new System.Drawing.Point(6, 18);
 			this.lstUser.Name = "lstUser";
-			this.lstUser.Size = new System.Drawing.Size(661, 866);
+			this.lstUser.Size = new System.Drawing.Size(479, 544);
 			this.lstUser.TabIndex = 0;
 			this.lstUser.UseCompatibleStateImageBehavior = false;
+			this.lstUser.View = System.Windows.Forms.View.Details;
+			// 
+			// UserName
+			// 
+			this.UserName.Text = "用户名";
+			this.UserName.Width = 149;
+			// 
+			// Password
+			// 
+			this.Password.Text = "密码";
+			this.Password.Width = 173;
 			// 
 			// groupBox3
 			// 
+			this.groupBox3.Controls.Add(this.btnTestLoginMuti);
 			this.groupBox3.Controls.Add(this.BtnTestStampInfo);
 			this.groupBox3.Controls.Add(this.btnTestSubmitBill);
 			this.groupBox3.Controls.Add(this.btnTestSynBillInfo);
@@ -139,14 +158,32 @@
 			this.groupBox3.Controls.Add(this.btnTestLogin);
 			this.groupBox3.Location = new System.Drawing.Point(12, 218);
 			this.groupBox3.Name = "groupBox3";
-			this.groupBox3.Size = new System.Drawing.Size(292, 296);
+			this.groupBox3.Size = new System.Drawing.Size(292, 362);
 			this.groupBox3.TabIndex = 2;
 			this.groupBox3.TabStop = false;
 			this.groupBox3.Text = "测试";
 			// 
+			// btnTestLoginMuti
+			// 
+			this.btnTestLoginMuti.Location = new System.Drawing.Point(8, 56);
+			this.btnTestLoginMuti.Name = "btnTestLoginMuti";
+			this.btnTestLoginMuti.Size = new System.Drawing.Size(278, 33);
+			this.btnTestLoginMuti.TabIndex = 7;
+			this.btnTestLoginMuti.Text = "批量登录";
+			this.btnTestLoginMuti.UseVisualStyleBackColor = true;
+			// 
+			// BtnTestStampInfo
+			// 
+			this.BtnTestStampInfo.Location = new System.Drawing.Point(8, 128);
+			this.BtnTestStampInfo.Name = "BtnTestStampInfo";
+			this.BtnTestStampInfo.Size = new System.Drawing.Size(278, 33);
+			this.BtnTestStampInfo.TabIndex = 6;
+			this.BtnTestStampInfo.Text = "获取邮票信息";
+			this.BtnTestStampInfo.UseVisualStyleBackColor = true;
+			// 
 			// btnTestSubmitBill
 			// 
-			this.btnTestSubmitBill.Location = new System.Drawing.Point(8, 242);
+			this.btnTestSubmitBill.Location = new System.Drawing.Point(8, 272);
 			this.btnTestSubmitBill.Name = "btnTestSubmitBill";
 			this.btnTestSubmitBill.Size = new System.Drawing.Size(278, 33);
 			this.btnTestSubmitBill.TabIndex = 5;
@@ -155,7 +192,7 @@
 			// 
 			// btnTestSynBillInfo
 			// 
-			this.btnTestSynBillInfo.Location = new System.Drawing.Point(8, 131);
+			this.btnTestSynBillInfo.Location = new System.Drawing.Point(8, 164);
 			this.btnTestSynBillInfo.Name = "btnTestSynBillInfo";
 			this.btnTestSynBillInfo.Size = new System.Drawing.Size(278, 33);
 			this.btnTestSynBillInfo.TabIndex = 4;
@@ -164,7 +201,7 @@
 			// 
 			// btnTestGetImgVerifyCode
 			// 
-			this.btnTestGetImgVerifyCode.Location = new System.Drawing.Point(8, 205);
+			this.btnTestGetImgVerifyCode.Location = new System.Drawing.Point(8, 236);
 			this.btnTestGetImgVerifyCode.Name = "btnTestGetImgVerifyCode";
 			this.btnTestGetImgVerifyCode.Size = new System.Drawing.Size(278, 33);
 			this.btnTestGetImgVerifyCode.TabIndex = 3;
@@ -173,7 +210,7 @@
 			// 
 			// btnTestGetPhoneVerifyCode
 			// 
-			this.btnTestGetPhoneVerifyCode.Location = new System.Drawing.Point(8, 168);
+			this.btnTestGetPhoneVerifyCode.Location = new System.Drawing.Point(8, 200);
 			this.btnTestGetPhoneVerifyCode.Name = "btnTestGetPhoneVerifyCode";
 			this.btnTestGetPhoneVerifyCode.Size = new System.Drawing.Size(278, 33);
 			this.btnTestGetPhoneVerifyCode.TabIndex = 2;
@@ -182,7 +219,7 @@
 			// 
 			// btnTestModifyPhone
 			// 
-			this.btnTestModifyPhone.Location = new System.Drawing.Point(8, 57);
+			this.btnTestModifyPhone.Location = new System.Drawing.Point(8, 92);
 			this.btnTestModifyPhone.Name = "btnTestModifyPhone";
 			this.btnTestModifyPhone.Size = new System.Drawing.Size(278, 33);
 			this.btnTestModifyPhone.TabIndex = 1;
@@ -197,6 +234,7 @@
 			this.btnTestLogin.TabIndex = 0;
 			this.btnTestLogin.Text = "登录";
 			this.btnTestLogin.UseVisualStyleBackColor = true;
+			this.btnTestLogin.Click += new System.EventHandler(this.btnTestLogin_Click);
 			// 
 			// groupBox4
 			// 
@@ -243,20 +281,21 @@
 			this.ipVerifyUsername.Size = new System.Drawing.Size(227, 21);
 			this.ipVerifyUsername.TabIndex = 1;
 			// 
-			// BtnTestStampInfo
+			// OpLog
 			// 
-			this.BtnTestStampInfo.Location = new System.Drawing.Point(8, 94);
-			this.BtnTestStampInfo.Name = "BtnTestStampInfo";
-			this.BtnTestStampInfo.Size = new System.Drawing.Size(278, 33);
-			this.BtnTestStampInfo.TabIndex = 6;
-			this.BtnTestStampInfo.Text = "获取邮票信息";
-			this.BtnTestStampInfo.UseVisualStyleBackColor = true;
+			this.OpLog.BorderStyle = System.Windows.Forms.BorderStyle.None;
+			this.OpLog.Location = new System.Drawing.Point(12, 586);
+			this.OpLog.Name = "OpLog";
+			this.OpLog.Size = new System.Drawing.Size(1203, 202);
+			this.OpLog.TabIndex = 4;
+			this.OpLog.Text = "";
 			// 
 			// FrmMain
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(997, 916);
+			this.ClientSize = new System.Drawing.Size(1314, 800);
+			this.Controls.Add(this.OpLog);
 			this.Controls.Add(this.groupBox4);
 			this.Controls.Add(this.groupBox3);
 			this.Controls.Add(this.groupBox2);
@@ -297,6 +336,10 @@
 		private System.Windows.Forms.Label label4;
 		private System.Windows.Forms.TextBox ipVerifyUsername;
 		private System.Windows.Forms.Button BtnTestStampInfo;
+		private System.Windows.Forms.RichTextBox OpLog;
+		private System.Windows.Forms.Button btnTestLoginMuti;
+		private System.Windows.Forms.ColumnHeader UserName;
+		private System.Windows.Forms.ColumnHeader Password;
 	}
 }
 

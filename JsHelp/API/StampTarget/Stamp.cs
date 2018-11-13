@@ -1,5 +1,6 @@
 ﻿using DotNet4.Utilities.UtilCode;
 using DotNet4.Utilities.UtilHttp;
+using DotNet4.Utilities.UtilReg;
 using JsHelp.API.User;
 using System;
 using System.Collections.Generic;
@@ -20,7 +21,7 @@ namespace JsHelp.API.StampTarget
 		}
 		public void ShowOut()
 		{
-			System.Windows.Forms.MessageBox.Show(this.ToString(),"邮票基础数据");
+			Logger.SysLog("邮票基础数据："+this.ToString());
 		}
 		public override string ToString()
 		{
@@ -39,18 +40,9 @@ namespace JsHelp.API.StampTarget
 		private Bill targetBill;
 		public bool SynBillInfo(User.User user)
 		{
+			//TODO 同步生成的订单的信息
 			if (!Bill.Init) { user.LogInfo("邮票数据未加载完成时不可同步订单信息"); return false; }
 			targetBill = new StampTarget.Bill(this);
-			//var item = new HttpItem() {
-			//	Url= "http://jiyou.retail.11185.cn/retail/JSONGetUserDefaultAddressByUserID.html",
-			//	Method="post",
-			//};
-			//user.ByCASAuth(item, (x) => {
-				
-			//});
-			//item.Url = "";
-
-			
 			return true;
 		}
 	}
@@ -61,17 +53,13 @@ namespace JsHelp.API.StampTarget
 		public Bill(Stamp parent)
 		{
 			this.parent = parent;
-			var http = new HttpClient();
-			http.GetHtml("http://jiyou.retail.11185.cn/retail/initPageForBuyNow.html", "post", string.Format("buyGoodsNowBean.goods_id={0}&buy_type={1}&buyGoodsNowBean.goods_attr_id={2}&buyGoodsNowBean.goods_num={3}&goodsTicketAttr={4}",
-				parent.Bill.Goods.Goods_id,
-				parent.Bill.Buy_type,
-				parent.Bill.Goods.Goods_attr_id,
-				parent.Bill.Goods.Goods_num,
-				parent.Bill.GoodsTicketAttr
-				),cookies:parent.User.JSESSIONID,callBack:(x)=> {
-					
-					init = true;
-				});
+			parent.User.UserRequest.JSONGetUserInfoByUserId((userInfo) => {
+				
+
+			},parent);
+
+
+
 		}
 
 		public bool Init { get => init; set => init = value; }
@@ -102,9 +90,9 @@ namespace JsHelp.API.StampTarget
 		{
 			this.parent = parent;
 			var buildStamp = new Task(()=> {
-				var http = new HttpClient();
+				parent.User.UserRequest.Http.ClearItem();
 				goods = new buyGoodsNowBean() {Goods_id=id};
-				var response = http.GetHtml(GoodsPageUrl,cookies:parent.User.JSESSIONID).document.response;
+				var response = parent.User.UserRequest.Http.GetHtml(GoodsPageUrl).document.response;
 				var info = response.DataString();
 				goods.Goods_attr_id = HttpUtil.GetElement(info, "\"attrId\":\"","\"");
 				BuyLimitNum = HttpUtil.GetElement(info, "\"buyLimit\":\"","\"");
@@ -117,7 +105,7 @@ namespace JsHelp.API.StampTarget
 			});
 			buildStamp.Start();
 		}
-		public string GoodsPageUrl { get =>string.Format("http://jiyou.11185.cn/retail/ticketDetail_{0}.html",goods.Goods_id ); }
+		public string GoodsPageUrl { get =>string.Format("http://jiyou.retail.11185.cn/retail/ticketDetail_{0}.html",goods.Goods_id ); }
 		public BillBuild(buyGoodsNowBean goods, string buy_type, string goodsTicketAttr)
 		{
 			this.Goods = goods;

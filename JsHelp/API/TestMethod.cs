@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace JsHelp.API
@@ -28,15 +29,33 @@ namespace JsHelp.API
 		{
 			this.user = user;
 		}
-		public bool Login()
+		public void Login(Action<User.User> CallBack)
 		{
-			DotNet4.Utilities.UtilHttp.HttpItem.UsedFidder = true;
+			DotNet4.Utilities.UtilHttp.HttpClient.UsedFidder = true;
+			DotNet4.Utilities.UtilHttp.HttpItem.RedirectDisable = true;
 			if (user == null)
 			{
 				user = new User.User();
+				user.UserRequest = new Request.RequestBase(user);
 				user.InputUserByUser();
 			}
-			return user.Login();
+			var task = new Thread(() =>
+			  {
+				  user.Login((anyException) =>
+				  {
+					  if (anyException != null)
+					  {
+						  if (anyException.GetType() == new User.LoginHandle.VerifyFailedException().GetType())
+						  {
+							  user.LogInfo(anyException.Message);
+							  this.Login((user)=>CallBack?.BeginInvoke(user,(obj)=> { },null));
+							  return;
+						  }
+					  }
+					  CallBack?.BeginInvoke(user, (obj) => { }, null);
+				  });
+			  });
+			task.Start();
 		}
 		public bool ModifyPhone()
 		{
@@ -53,7 +72,7 @@ namespace JsHelp.API
 			}
 			return true;
 		}
-		public bool SynStampInfo(bool showMsg=true)
+		public bool SynStampInfo(bool showMsg=true,Action<StampTarget.Stamp>CallBack=null)
 		{
 			if (!CheckUserStatus()) return false;
 			var stampReg = new Reg().In("Setting").In("defaultUser");
@@ -64,9 +83,10 @@ namespace JsHelp.API
 					InputBox.ShowInputBox("邮票", "购买数量", stampReg.GetInfo("stampBuyNum"), (x) => stampReg.SetInfo("stampBuyNum", x)),
 					(loadedStamp) => {
 						if (showMsg)
-						{
+						{	
 							loadedStamp.ShowOut();
 						}
+						CallBack?.Invoke(stamp);
 					});
 			}
 			catch (Exception ex)
@@ -77,37 +97,32 @@ namespace JsHelp.API
 		}
 		public bool SynBillInfo()
 		{
-			if (!CheckUserStatus()) return false;
-			var task = new Task(() => SynStampInfo(false));
-			var synBiill = task.ContinueWith((x) => {
-				do
-				{
-					Task.Delay(500);//等待邮票数据初始化
-				} while (!stamp.SynBillInfo(user));
+			if (!CheckUserStatus()) return false; SynStampInfo(false, (x) => {
+				stamp.SynBillInfo(user);
 			});
-			task.Start();
 			return true;
 		}
 		public bool GetPhoneVerifyCode()
 		{
+			//TODO 获取订单下单时的手机验证码,接接码平台
 			if (!CheckUserStatus()) return false;
 			throw new NotImplementedException();
 		}
 
 		public bool GetImgVerifyCode()
 		{
+			//TODO 获取订单下单时的验证码图像
 			if (!CheckUserStatus()) return false;
 			throw new NotImplementedException();
-			return true;
 		}
 
 
 
 		public bool TestSubmitBill()
 		{
+			//TODO 订单下单
 			if (!CheckUserStatus()) return false;
 			throw new NotImplementedException();
-			return true;
 		}
 
 	}
